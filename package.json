@@ -1,0 +1,16 @@
+{
+  "name": "cryptolabs--server",
+  "version": "1.0.0",
+  "description": "server for CryptoLabs Project - React",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@coinpaprika/api-nodejs-client": "^1.2.0",
+    "express": "^4.18.2",
+    "nodemon": "^2.0.22"
+  }
+}
