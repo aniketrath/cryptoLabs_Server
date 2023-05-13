@@ -1,7 +1,8 @@
 const express = require("express");
+var cors = require('cors');
 const app = express();
 const port = 5000;
-
+app.use(cors());
 //Basic Coin Stats function
 async function getPriceStats(coin_id) {
     const resp = await fetch(
@@ -28,7 +29,6 @@ async function getCoinStats(coin_id) {
     const resp = await fetch(`https://api.coinpaprika.com/v1/coins/${coin_id}`);
     const primary_data = await resp.json();
     const price = await getPriceStats(coin_id);
-    //   console.log(price);
     const id = primary_data.id;
     const name = primary_data.name;
     const symbol = primary_data.symbol;
@@ -41,8 +41,7 @@ async function getCoinStats(coin_id) {
         logo,
         rank,
         price_: price,
-    };/* 
-    console.log(json_data); */
+    };
     return json_data;
 }
 // Ticket Data function
@@ -61,7 +60,6 @@ async function getTickerData(coin_id) {
     }
     let year = time.getFullYear();
     const hist_date = `${year}-${month}-${date}`;
-    console.log(hist_date);
     const resp = await fetch(`https://api.coinpaprika.com/v1/tickers/${coin_id}/historical?start=${hist_date}&interval=1h`);
     const price_data = await resp.json();
     //console.log(price_data);
@@ -81,7 +79,7 @@ async function getExchanges() {
             pages: ele.links
         }
     });
-    return exchange_list;
+    return exchange_list.slice(1, 100);
 }
 //Coins List Function
 async function getCoins() {
@@ -99,31 +97,67 @@ async function getCoins() {
     return coin_list;
 }
 
+async function getGlobal() {
+    const link = ' https://api.coinpaprika.com/v1/global';
+    const resp = await fetch(link);
+    const data = await resp.json();
+    /* console.log(data); */
+    let cryptos = data.cryptocurrencies_number;
+    let btc_dominance = data.bitcoin_dominance_percentage;
+    let volume_24Hr = data.volume_24h_ath_value;
+    let volume_24Hr_change = data.volume_24h_change_24h;
+    let marketCap_24Hr = data.market_cap_ath_date;
+    let marketCap_24Hr_change = data.market_cap_change_24h;
+    const json_data = {
+        cryptos,
+        btc_dominance,
+        volume_24Hr,
+        volume_24Hr_change,
+        marketCap_24Hr,
+        marketCap_24Hr_change
+    }
+    return json_data;
+}
+
 //CurrentCoin Route resp, request
-app.get("/CurrentCoin", async (req, res) => {
-    const coin_stats = await getCoinStats('btc-bitcoin');
-    const ticker_prices = await getTickerData('btc-bitcoin');
+app.get("/currentcoin/:id", async (req, res) => {
+    let coin_id = req.params.id;
+    const coin_stats = await getCoinStats(coin_id);
+    const price_stats = await getPriceStats(coin_id)
+    const ticker_prices = await getTickerData(coin_id);
+    const coin_list = await getCoins();
+    coin_list.slice(110, 150);
     const json_ = {
         coin_stats,
-        ticker_prices
+        ticker_prices,
+        coin_list,
+        price_stats
     }
     res.send(json_);
 });
 //Exchanges Route resp, request
 app.get("/Exchanges", async (req, res) => {
     const exchange_listings = await getExchanges();
+    const global_data = await getGlobal();
     const json_ = {
         exchange_listings,
+        global_data
     }
     res.send(json_);
 });
 //Cryptocurrencies Route resp , request
 app.get('/Home', async (req, res) => {
-    const coin_list = await getCoins();
+    const coin_list_org = await getCoins();
+    const global_data = await getGlobal();
+    coin_list = coin_list_org.slice(1, 100);
     const json_ = {
-        coin_list
+        coin_list,
+        global_data
     }
     res.send(json_);
+})
+app.get('/', (req, res) => {
+    res.send("hello world")
 })
 
 app.listen(port, () => {
